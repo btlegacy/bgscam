@@ -1,5 +1,4 @@
 import streamlit as st
-import requests
 import os
 from datetime import datetime
 import time
@@ -9,38 +8,25 @@ import pytz
 # 1. Configuration & Setup
 st.set_page_config(page_title="Bozi's Bowman Gray Monitor", layout="wide")
 ET = pytz.timezone('US/Eastern')
-URL = "https://eapps.ncdot.gov/services/traffic-prod/v1/cameras/images?filename=MLK_BowmanGray.jpg"
 IMAGE_DIR = "images"
 
+# Ensure directory exists so the app doesn't crash if it's empty
 if not os.path.exists(IMAGE_DIR):
     os.makedirs(IMAGE_DIR)
 
-# 2. Capture Logic
-def capture_latest():
-    now_et = datetime.now(ET)
-    timestamp = now_et.strftime("%Y-%m-%d_%H-%M")
-    filename = f"{IMAGE_DIR}/{timestamp}.jpg"
-    try:
-        response = requests.get(URL, timeout=10)
-        if response.status_code == 200:
-            if not os.path.exists(filename):
-                with open(filename, 'wb') as f:
-                    f.write(response.content)
-            return filename
-    except Exception as e:
-        st.error(f"Capture error: {e}")
-    return None
-
-capture_latest()
-st_autorefresh(interval=480000, key="bozi_refresh")
+# 2. Auto-Refresh
+# Set to 6 minutes (360,000ms) to match your new capture schedule
+st_autorefresh(interval=360000, key="bozi_refresh")
 
 # 3. UI Header
 st.title("📸 Bozi's Bowman Gray Monitor")
 current_time = datetime.now(ET).strftime('%I:%M:%S %p')
 st.write(f"**Winston-Salem Local Time:** {current_time}")
+st.caption("Note: Images are captured automatically every 6 minutes via GitHub Actions.")
 
 # 4. Processing Images
 if os.path.exists(IMAGE_DIR):
+    # Sort files chronologically for the timelapse
     files = sorted([f for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")])
     
     if files:
@@ -50,28 +36,36 @@ if os.path.exists(IMAGE_DIR):
         video_placeholder = st.empty()
         label_placeholder = st.empty()
         
-        # --- GALLERY ---
+        # --- GALLERY CONTAINER ---
+        # We render the gallery first so it's visible while the loop runs
         gallery_container = st.container()
         
         with gallery_container:
             st.divider()
-            st.header("🖼️ Captured Frames")
+            st.header("🖼️ Captured Frames (Newest First)")
             cols = st.columns(4)
+            # Use reversed(files) for the gallery to show newest first
             for idx, file in enumerate(reversed(files)):
                 img_path = f"{IMAGE_DIR}/{file}"
-                raw_time = file.replace('.jpg', '').split('_')[1]
-                hour, minute = raw_time.split('-')
-                formatted_time = datetime.strptime(f"{hour}:{minute}", "%H:%M").strftime("%I:%M %p")
+                
+                # Format time for the popover button (12-hour format)
+                try:
+                    raw_time = file.replace('.jpg', '').split('_')[1]
+                    hour, minute = raw_time.split('-')
+                    formatted_time = datetime.strptime(f"{hour}:{minute}", "%H:%M").strftime("%I:%M %p")
+                except:
+                    formatted_time = "Unknown"
                 
                 with cols[idx % 4]:
                     st.image(img_path, use_container_width=True)
                     with st.popover(f"🔎 Enlarge {formatted_time}", use_container_width=True):
                         st.image(img_path, use_container_width=True)
-                        st.write(f"Timestamp: {file.replace('.jpg', '')} ET")
+                        st.write(f"**Full Timestamp:** {file.replace('.jpg', '')} ET")
                         with open(img_path, "rb") as f:
-                            st.download_button("💾 Save", f, file_name=file, key=f"dl_{file}")
+                            st.download_button("💾 Save to Device", f, file_name=file, key=f"dl_{file}")
 
         # 5. THE INFINITE LOOP
+        # Plays at 0.5 seconds per frame as requested
         while True:
             for file in files:
                 img_path = f"{IMAGE_DIR}/{file}"
@@ -80,7 +74,8 @@ if os.path.exists(IMAGE_DIR):
                 video_placeholder.image(img_path, use_container_width=True)
                 label_placeholder.markdown(f"**Looping Frame (ET):** {display_label}")
                 
-                # CHANGED: 0.5 seconds per frame for a slower, steady look
                 time.sleep(0.5) 
     else:
-        st.info("Archive is empty. Waiting for next capture...")
+        st.info("Archive is empty. Waiting for GitHub Actions to push the first image...")
+else:
+    st.warning("Images directory not found. Please ensure the GitHub Action has run at least once.")
