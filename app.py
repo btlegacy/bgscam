@@ -24,7 +24,7 @@ def capture_latest():
                 f.write(response.content)
             return filename
     except Exception as e:
-        st.error(f"Failed to capture live image: {e}")
+        st.error(f"Capture error: {e}")
     return None
 
 capture_latest()
@@ -32,7 +32,7 @@ st_autorefresh(interval=480000, key="bozi_refresh")
 
 # 3. UI Header
 st.title("📸 Bozi's Bowman Gray Monitor")
-st.write(f"**Status:** Active | **Last Heartbeat:** {datetime.now().strftime('%H:%M:%S')}")
+st.write(f"**Last Sync:** {datetime.now().strftime('%H:%M:%S')}")
 
 # 4. Processing Images
 if os.path.exists(IMAGE_DIR):
@@ -41,40 +41,35 @@ if os.path.exists(IMAGE_DIR):
     if files:
         # --- TIMELAPSE PLAYER ---
         with st.expander("🎞️ View Timelapse Progression", expanded=True):
-            speed = st.select_slider("Playback Speed", options=[0.05, 0.1, 0.2, 0.5, 1.0], value=0.1)
+            speed = st.select_slider("Speed (sec/frame)", options=[0.05, 0.1, 0.2, 0.5], value=0.1)
             video_placeholder = st.empty()
-            label_placeholder = st.empty()
-            
             if st.button("▶️ Play Timelapse"):
                 for file in files:
                     video_placeholder.image(f"{IMAGE_DIR}/{file}", use_container_width=True)
-                    label_placeholder.markdown(f"**Timestamp:** {file.replace('.jpg', '').replace('_', ' ')}")
                     time.sleep(speed)
 
         st.divider()
 
-        # --- CLICKABLE GALLERY ---
-        st.header("🖼️ Captured Frames")
-        st.caption("Click the button below any image to see the full-size version.")
+        # --- GALLERY ---
+        st.header("🖼️ History")
         
+        # Display latest image first
         cols = st.columns(4)
         for idx, file in enumerate(reversed(files)):
+            img_path = f"{IMAGE_DIR}/{file}"
+            # Extract just the time HH-MM from the filename
+            time_label = file.replace('.jpg', '').split('_')[1].replace('-', ':')
+            
             with cols[idx % 4]:
-                img_path = f"{IMAGE_DIR}/{file}"
-                friendly_time = file.replace('.jpg', '').replace('_', ' ')
-                
-                # Display the thumbnail
                 st.image(img_path, use_container_width=True)
                 
-                # Create a Popover to act as an "Enlarge" button
-                with st.popover(f"🔍 Enlarge {friendly_time.split(' ')[1]}", use_container_width=True):
-                    st.image(img_path, caption=f"Full Resolution: {friendly_time}", use_container_width=True)
-                    with open(img_path, "rb") as file_bytes:
-                        st.download_button(
-                            label="💾 Download Image",
-                            data=file_bytes,
-                            file_name=file,
-                            mime="image/jpeg"
-                        )
+                # The Popover acts as the "Expansion" trigger
+                with st.popover(f"🔎 Full View ({time_label})", use_container_width=True):
+                    st.image(img_path, use_container_width=True)
+                    st.caption(f"Captured: {file.replace('.jpg', '')}")
+                    
+                    # Add a dedicated download link inside the popover
+                    with open(img_path, "rb") as f:
+                        st.download_button("💾 Save to Device", f, file_name=file)
     else:
-        st.info("Waiting for the first image to be saved...")
+        st.info("Archive is empty. Waiting for next capture...")
