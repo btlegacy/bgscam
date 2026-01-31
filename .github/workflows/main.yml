@@ -1,0 +1,33 @@
+name: Capture Webcam Image
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows you to run it manually for testing
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run capture script
+        run: python capture.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "WebcamBot"
+          git config --global user.email "bot@github.com"
+          git add images/
+          git commit -m "Capture image $(date)"
+          git push
