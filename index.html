@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webcam Archive</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; }
+        .gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .card { background: white; padding: 5px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card img { width: 300px; height: auto; }
+        #timelapse-screen { width: 600px; border: 5px solid #333; }
+    </style>
+</head>
+<body>
+    <h1>Webcam Timelapse</h1>
+    
+    <div id="player">
+        <img id="timelapse-screen" src="" alt="Timelapse Loading...">
+        <p id="timelapse-label">Loading...</p>
+        <button onclick="startTimelapse()">Play Timelapse</button>
+    </div>
+
+    <hr>
+    <h2>Image Gallery</h2>
+    <div class="gallery" id="gallery"></div>
+
+    <script>
+        // In a real app, you would fetch a JSON list of filenames. 
+        // For GitHub Pages, we can manually update this list or use a script to generate it.
+        const images = [
+            "2024-05-20_12-00.jpg",
+            "2024-05-20_12-08.jpg",
+            "2024-05-20_12-16.jpg"
+            // You can automate this list generation in your Python script
+        ];
+
+        const gallery = document.getElementById('gallery');
+        const screen = document.getElementById('timelapse-screen');
+        const label = document.getElementById('timelapse-label');
+
+        // Render Gallery
+        images.reverse().forEach(img => {
+            gallery.innerHTML += `<div class="card"><img src="images/${img}"><p>${img.replace('.jpg', '')}</p></div>`;
+        });
+
+        // Simple Timelapse Logic
+        let i = 0;
+        function startTimelapse() {
+            if (i >= images.length) i = 0;
+            screen.src = `images/${images[i]}`;
+            label.innerText = images[i].replace('.jpg', '');
+            i++;
+            setTimeout(startTimelapse, 200); // 5 frames per second
+        }
+    </script>
+</body>
+</html>
