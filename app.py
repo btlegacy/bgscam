@@ -28,6 +28,8 @@ def capture_latest():
     return None
 
 capture_latest()
+
+# Refresh every 8 minutes (480,000ms)
 st_autorefresh(interval=480000, key="bozi_refresh")
 
 # 3. UI Header
@@ -36,40 +38,40 @@ st.write(f"**Last Sync:** {datetime.now().strftime('%H:%M:%S')}")
 
 # 4. Processing Images
 if os.path.exists(IMAGE_DIR):
+    # Sort files chronologically for the timelapse
     files = sorted([f for f in os.listdir(IMAGE_DIR) if f.endswith(".jpg")])
     
     if files:
-        # --- TIMELAPSE PLAYER ---
-        with st.expander("🎞️ View Timelapse Progression", expanded=True):
-            speed = st.select_slider("Speed (sec/frame)", options=[0.05, 0.1, 0.2, 0.5], value=0.1)
-            video_placeholder = st.empty()
-            if st.button("▶️ Play Timelapse"):
-                for file in files:
-                    video_placeholder.image(f"{IMAGE_DIR}/{file}", use_container_width=True)
-                    time.sleep(speed)
+        # --- AUTO-PLAY TIMELAPSE SECTION ---
+        st.header("🎞️ Live Timelapse Progression")
+        
+        video_placeholder = st.empty()
+        label_placeholder = st.empty()
+        
+        # This loop runs automatically on page load
+        # Using a slice like files[-50:] would play only the last 50 images if the archive gets too big
+        for file in files:
+            img_path = f"{IMAGE_DIR}/{file}"
+            video_placeholder.image(img_path, use_container_width=True)
+            label_placeholder.markdown(f"**Timestamp:** {file.replace('.jpg', '').replace('_', ' ')}")
+            time.sleep(0.5) # Set to 0.5 seconds per frame
 
         st.divider()
 
         # --- GALLERY ---
-        st.header("🖼️ History")
+        st.header("🖼️ Captured Frames")
+        st.caption("Expand any frame below to view or download.")
         
-        # Display latest image first
         cols = st.columns(4)
         for idx, file in enumerate(reversed(files)):
             img_path = f"{IMAGE_DIR}/{file}"
-            # Extract just the time HH-MM from the filename
             time_label = file.replace('.jpg', '').split('_')[1].replace('-', ':')
             
             with cols[idx % 4]:
                 st.image(img_path, use_container_width=True)
-                
-                # The Popover acts as the "Expansion" trigger
-                with st.popover(f"🔎 Full View ({time_label})", use_container_width=True):
+                with st.popover(f"🔎 Enlarge {time_label}", use_container_width=True):
                     st.image(img_path, use_container_width=True)
-                    st.caption(f"Captured: {file.replace('.jpg', '')}")
-                    
-                    # Add a dedicated download link inside the popover
                     with open(img_path, "rb") as f:
-                        st.download_button("💾 Save to Device", f, file_name=file)
+                        st.download_button("💾 Save Image", f, file_name=file, key=f"dl_{file}")
     else:
         st.info("Archive is empty. Waiting for next capture...")
