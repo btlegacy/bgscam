@@ -50,8 +50,7 @@ if os.path.exists(IMAGE_DIR):
         video_placeholder = st.empty()
         label_placeholder = st.empty()
         
-        # --- GALLERY (Rendered before the loop) ---
-        # We use a container so the gallery stays on the page while the loop runs above it
+        # --- GALLERY ---
         gallery_container = st.container()
         
         with gallery_container:
@@ -73,7 +72,6 @@ if os.path.exists(IMAGE_DIR):
                             st.download_button("💾 Save", f, file_name=file, key=f"dl_{file}")
 
         # 5. THE INFINITE LOOP
-        # This will keep the timelapse running forever until the page is refreshed or closed
         while True:
             for file in files:
                 img_path = f"{IMAGE_DIR}/{file}"
@@ -81,6 +79,8 @@ if os.path.exists(IMAGE_DIR):
                 
                 video_placeholder.image(img_path, use_container_width=True)
                 label_placeholder.markdown(f"**Looping Frame (ET):** {display_label}")
-                time.sleep(0.1)
+                
+                # CHANGED: 0.5 seconds per frame for a slower, steady look
+                time.sleep(0.5) 
     else:
         st.info("Archive is empty. Waiting for next capture...")
