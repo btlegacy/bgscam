@@ -1,0 +1,19 @@
+name: Webcam Capture
+on:
+  schedule:
+    - cron: '*/8 * * * *' # Every 8 minutes
+  workflow_dispatch:
+
+jobs:
+  capture_image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Capture
+        run: |
+          python capture.py
+          git config --global user.name "WebcamBot"
+          git config --global user.email "bot@github.com"
+          git add images/
+          git commit -m "Capture: $(date)" || echo "No changes"
+          git push
