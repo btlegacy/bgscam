@@ -22,7 +22,7 @@ st_autorefresh(interval=360000, key="bozi_refresh")
 st.title("📸 Bozi's Bowman Gray Monitor")
 current_time = datetime.now(ET).strftime('%I:%M:%S %p')
 st.write(f"**Winston-Salem Local Time:** {current_time}")
-st.caption("Note: Images are captured automatically every 6 minutes via GitHub Actions.")
+st.caption("Note: This is just a fun tool to follow snow and cleanup progress.")
 
 # 4. Processing Images
 if os.path.exists(IMAGE_DIR):
