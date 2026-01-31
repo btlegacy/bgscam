@@ -1,0 +1,31 @@
+name: 8-Minute Capture
+on:
+  schedule:
+    - cron: '*/8 * * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install Requests
+        run: pip install requests
+        
+      - name: Run Capture
+        run: python capture.py
+        
+      - name: Commit and Push
+        run: |
+          git config --global user.name "Webcam-Bot"
+          git config --global user.email "bot@github.com"
+          git add images/
+          git commit -m "New capture: $(date)" || exit 0
+          git push
